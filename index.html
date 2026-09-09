@@ -11,10 +11,10 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root{
-    --graphite:#11151b;
-    --graphite-2:#171d25;
-    --graphite-3:#1e2530;
-    --line:#2a3340;
+    --graphite:#05070a;
+    --graphite-2:#0c1016;
+    --graphite-3:#131a22;
+    --line:#1c232c;
     --blueprint:#5cc8ff;
     --blueprint-dim:#3e7cb1;
     --brass:#c9944f;
@@ -25,7 +25,7 @@
     --mono:'IBM Plex Mono',monospace;
   }
   *{box-sizing:border-box;}
-  html{scroll-behavior:smooth;}
+  html{scroll-behavior:auto;}
   body{
     margin:0;
     background:var(--graphite);
@@ -45,7 +45,7 @@
   /* NAV */
   .nav{
     position:fixed; top:0; left:0; right:0; z-index:50;
-    background:rgba(17,21,27,0.82);
+    background:rgba(4,6,9,0.82);
     backdrop-filter:blur(10px);
     border-bottom:1px solid var(--line);
   }
@@ -54,11 +54,36 @@
     display:flex; align-items:center; justify-content:space-between;
   }
   .mark{
-    width:34px; height:34px; border:1.5px solid var(--blueprint-dim);
-    border-radius:4px; display:flex; align-items:center; justify-content:center;
+    position:relative; width:34px; height:34px; border:1.5px solid var(--blueprint-dim);
+    border-radius:4px; flex-shrink:0; overflow:hidden; white-space:nowrap;
     font-family:var(--mono); font-size:13px; color:var(--blueprint); letter-spacing:0.5px;
-    flex-shrink:0;
+    cursor:pointer; user-select:none; background:rgba(92,200,255,0.06);
+    transition:width .75s cubic-bezier(0.34,1.56,0.64,1), border-radius .75s cubic-bezier(0.34,1.56,0.64,1),
+      background .5s ease, box-shadow .5s ease;
   }
+  .mark:hover{ box-shadow:0 0 0 4px rgba(92,200,255,0.10); }
+  .mark.expanded{
+    width:186px; border-radius:17px;
+    background:rgba(92,200,255,0.14);
+    box-shadow:0 0 26px rgba(92,200,255,0.28), inset 0 1px 0 rgba(255,255,255,0.16);
+  }
+  .mark.jump{ animation:markJump .55s cubic-bezier(0.34,1.56,0.64,1); }
+  @keyframes markJump{
+    0%{ transform:scale(1,1); }
+    28%{ transform:scale(0.88,1.16) translateY(-3px); }
+    55%{ transform:scale(1.08,0.9) translateY(1px); }
+    78%{ transform:scale(0.97,1.03); }
+    100%{ transform:scale(1,1); }
+  }
+  .mark-short, .mark-full{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    transition:opacity .3s ease .05s;
+  }
+  .mark.expanded .mark-short{ opacity:0; transition:opacity .2s ease; }
+  .mark-full{ opacity:0; font-size:13.5px; }
+  .mark.expanded .mark-full{ opacity:1; }
+  .mark-full .ch{ display:inline-block; opacity:0; transform:translateY(8px); transition:opacity .4s ease, transform .4s ease; }
+  .mark.expanded .mark-full .ch{ opacity:1; transform:translateY(0); }
   .nav-links{display:flex; gap:28px; list-style:none; margin:0; padding:0;}
   .nav-links a{
     font-size:14.5px; color:var(--text-dim); text-decoration:none;
@@ -66,16 +91,21 @@
     transition:color .15s ease, border-color .15s ease;
   }
   .nav-links a:hover{color:var(--text); border-color:var(--blueprint-dim);}
-  .nav-toggle{display:none; background:none; border:1px solid var(--line); color:var(--text); border-radius:4px; padding:8px 10px; font-size:16px;}
+  .nav-toggle{display:none; background:rgba(255,255,255,0.06); backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,0.14); color:var(--text); border-radius:6px; padding:8px 10px; font-size:16px; transition:background .2s ease, border-color .2s ease;}
+  .nav-toggle:hover{background:rgba(92,200,255,0.12); border-color:var(--blueprint-dim);}
   @media (max-width:640px){
     .nav-links{
       position:absolute; top:100%; left:0; right:0;
-      flex-direction:column; gap:0; background:var(--graphite-2);
-      border-bottom:1px solid var(--line);
+      flex-direction:column; gap:0;
+      background:rgba(23,29,37,0.72);
+      backdrop-filter:blur(16px);
+      backdrop-filter:blur(12px) url(#glass-distort);
+      -webkit-backdrop-filter:blur(16px);
+      border-bottom:1px solid rgba(255,255,255,0.12);
       max-height:0; overflow:hidden; transition:max-height .25s ease;
     }
     .nav-links.open{max-height:280px;}
-    .nav-links a{display:block; padding:14px 28px; border-bottom:1px solid var(--line);}
+    .nav-links a{display:block; padding:14px 28px; border-bottom:1px solid rgba(255,255,255,0.08);}
     .nav-toggle{display:block;}
   }
 
@@ -103,25 +133,82 @@
   }
   .cta-row{display:flex; gap:14px; flex-wrap:wrap;}
   .btn{
-    display:inline-block; font-family:var(--sans); font-size:14.5px; font-weight:500;
-    padding:11px 20px; border-radius:5px; text-decoration:none;
-    transition:background .15s ease, border-color .15s ease, color .15s ease;
+    position:relative; isolation:isolate; overflow:hidden;
+    display:inline-flex; align-items:center; justify-content:center;
+    font-family:var(--sans); font-size:14.5px; font-weight:500;
+    padding:13px 26px; border-radius:999px; text-decoration:none;
+    border:1px solid rgba(255,255,255,0.16);
+    background:rgba(255,255,255,0.05);
+    backdrop-filter:blur(3px);
+    backdrop-filter:blur(3px) url(#btn-glass);
+    -webkit-backdrop-filter:blur(10px);
+    box-shadow:
+      0 2px 6px rgba(0,0,0,0.18),
+      0 0 14px rgba(255,255,255,0.06),
+      inset 2px 2px 1px -1px rgba(255,255,255,0.65),
+      inset -2px -2px 1px -1px rgba(255,255,255,0.35),
+      inset 0 0 8px 6px rgba(255,255,255,0.08);
+    color:var(--text);
+    transition:transform .3s cubic-bezier(0.1,0.4,0.2,1), background .2s ease, border-color .2s ease, box-shadow .2s ease;
   }
-  .btn-primary{background:var(--blueprint); color:#0c1116;}
-  .btn-primary:hover{background:#7cd4ff;}
-  .btn-ghost{border:1px solid var(--line); color:var(--text);}
-  .btn-ghost:hover{border-color:var(--blueprint-dim); color:var(--blueprint);}
+  .btn:hover{ transform:scale(1.05); }
+  .btn-primary{ background:rgba(92,200,255,0.16); border-color:rgba(92,200,255,0.5); color:#eaf8ff; }
+  .btn-primary:hover{ background:rgba(92,200,255,0.26); border-color:var(--blueprint); }
+  .btn-ghost{ background:rgba(255,255,255,0.04); border-color:rgba(255,255,255,0.18); color:var(--text); }
+  .btn-ghost:hover{ background:rgba(92,200,255,0.08); border-color:var(--blueprint-dim); color:var(--blueprint); }
 
   /* SECTIONS */
   section{padding:96px 0;}
   .section-head{margin-bottom:36px;}
   .section-head h2{font-size:26px; color:var(--text);}
-  .section-head p{color:var(--text-dim); font-size:15.5px; max-width:56ch; margin-top:10px;}
   .divider{height:1px; background:var(--line); border:none; margin:0;}
+  .hero + .divider{background:transparent;}
+  #engineering{background:linear-gradient(180deg, #000 0%, transparent 260px);}
+
+  /* SCROLL REVEAL SYSTEM */
+  [data-reveal]{
+    opacity:0; transform:translateY(46px) rotate(-2.5deg);
+    transition:opacity .9s cubic-bezier(0.16,1,0.3,1), transform .9s cubic-bezier(0.16,1,0.3,1);
+    will-change:transform, opacity;
+  }
+  [data-reveal].in-view{ opacity:1; transform:translateY(0) rotate(0deg); }
+  [data-reveal="right"]{ transform:translateY(46px) rotate(3deg) translateX(24px); }
+  [data-reveal="right"].in-view{ transform:translateY(0) rotate(0deg) translateX(0); }
+  [data-reveal="scale"]{ transform:scale(0.88) rotate(-4deg); }
+  [data-reveal="scale"].in-view{ transform:scale(1) rotate(0deg); }
+  [data-reveal="line"]{ opacity:1; transform:scaleX(0); transform-origin:left; }
+  [data-reveal="line"].in-view{ transform:scaleX(1); }
+
+  .skills-grid [data-reveal]:nth-child(1){ transition-delay:.02s; }
+  .skills-grid [data-reveal]:nth-child(2){ transition-delay:.08s; }
+  .skills-grid [data-reveal]:nth-child(3){ transition-delay:.14s; }
+  .skills-grid [data-reveal]:nth-child(4){ transition-delay:.20s; }
+  .skills-grid [data-reveal]:nth-child(5){ transition-delay:.26s; }
+  .skills-grid [data-reveal]:nth-child(6){ transition-delay:.32s; }
+  .gallery [data-reveal]:nth-child(1){ transition-delay:0s; }
+  .gallery [data-reveal]:nth-child(2){ transition-delay:.12s; }
+  .gallery [data-reveal]:nth-child(3){ transition-delay:.24s; }
+
+  .section-head h2{
+    background:linear-gradient(100deg, var(--text) 40%, var(--blueprint) 50%, var(--text) 60%);
+    background-size:240% 100%; -webkit-background-clip:text; background-clip:text;
+    color:transparent; animation:headingShine 7s ease-in-out infinite;
+  }
+  @keyframes headingShine{
+    0%, 100%{ background-position:200% 0; }
+    50%{ background-position:0% 0; }
+  }
 
   .project-card{
-    border:1px solid var(--line); border-radius:6px; padding:28px;
-    background:var(--graphite-2);
+    border:1px solid rgba(255,255,255,0.12); border-radius:10px; padding:28px;
+    background:rgba(255,255,255,0.035);
+    backdrop-filter:blur(14px);
+    backdrop-filter:blur(10px) url(#glass-distort);
+    -webkit-backdrop-filter:blur(14px);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.10),
+      inset 0 -10px 20px -14px rgba(0,0,0,0.5),
+      0 6px 20px rgba(0,0,0,0.25);
   }
   .project-card h3{font-size:19px; margin-bottom:10px;}
   .project-card .role{font-size:13.5px; font-style:italic; color:var(--text-dim); margin-bottom:14px; display:block;}
@@ -129,8 +216,9 @@
   .project-card li{margin-bottom:6px;}
 
   .diagram-box{
-    border:1px solid var(--line); border-radius:6px; padding:24px;
-    background:var(--graphite-3); margin-top:24px;
+    border:1px solid rgba(255,255,255,0.10); border-radius:8px; padding:24px;
+    background:rgba(255,255,255,0.02); margin-top:24px;
+    backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
   }
   .diagram-box svg{width:100%; height:auto;}
 
@@ -150,7 +238,8 @@
 
   .skills-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px 28px; margin-top:8px;}
   @media (max-width:640px){ .skills-grid{grid-template-columns:1fr;} }
-  .skill-row{display:flex; justify-content:space-between; padding:12px 0; border-bottom:1px solid var(--line); font-size:14.5px;}
+  .skill-row{display:flex; justify-content:space-between; align-items:center; padding:12px 14px; margin:0 -14px; border-bottom:1px solid rgba(255,255,255,0.08); border-radius:6px; font-size:14.5px; transition:background .2s ease;}
+  .skill-row:hover{background:rgba(255,255,255,0.045); backdrop-filter:blur(8px);}
   .skill-row span:first-child{color:var(--text);}
   .skill-row span:last-child{color:var(--text-dim); font-size:14px;}
 
@@ -167,10 +256,28 @@
 </head>
 <body>
 
+<svg style="position:absolute; width:0; height:0; overflow:hidden;" aria-hidden="true">
+  <filter id="glass-distort" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
+    <feTurbulence type="fractalNoise" baseFrequency="0.012 0.024" numOctaves="2" seed="7" result="turbulence"/>
+    <feGaussianBlur in="turbulence" stdDeviation="2" result="blurredNoise"/>
+    <feDisplacementMap in="SourceGraphic" in2="blurredNoise" scale="28" xChannelSelector="R" yChannelSelector="B"/>
+  </filter>
+  <filter id="btn-glass" x="-30%" y="-30%" width="160%" height="160%" color-interpolation-filters="sRGB">
+    <feTurbulence type="fractalNoise" baseFrequency="0.05 0.05" numOctaves="1" seed="1" result="turbulence"/>
+    <feGaussianBlur in="turbulence" stdDeviation="2" result="blurredNoise"/>
+    <feDisplacementMap in="SourceGraphic" in2="blurredNoise" scale="45" xChannelSelector="R" yChannelSelector="B" result="displaced"/>
+    <feGaussianBlur in="displaced" stdDeviation="3" result="finalBlur"/>
+    <feComposite in="finalBlur" in2="finalBlur" operator="over"/>
+  </filter>
+</svg>
+
 <nav class="nav">
   <div class="nav-inner">
     <div style="display:flex; align-items:center; gap:12px;">
-      <div class="mark">JS</div>
+      <div class="mark" id="logoMark" role="button" tabindex="0" aria-expanded="false" aria-label="Expand name">
+        <span class="mark-short">JS</span>
+        <span class="mark-full" id="markFull"></span>
+      </div>
     </div>
     <button class="nav-toggle" id="navToggle" aria-label="Toggle menu">☰</button>
     <ul class="nav-links" id="navLinks">
@@ -203,12 +310,12 @@
 
 <section id="engineering">
   <div class="wrap">
-    <div class="section-head">
+    <div class="section-head" data-reveal>
       <h2>Systems & Logic Engineering</h2>
       <p>Stormworks: Build and Rescue lets you build vehicles down to the wiring and physics — so I've used it as a sandbox to reverse-engineer real mechanical and control systems, then document how they actually work.</p>
     </div>
 
-    <div class="project-card">
+    <div class="project-card" data-reveal="right">
       <span class="role">Independent project</span>
       <h3>Stormworks Vehicle & Systems Engineering</h3>
       <p style="color:var(--text-dim); font-size:14.5px;">Designed, built, and reverse-engineered complex vehicle and mechanical systems, working through the underlying maths and control logic rather than just copying working builds.</p>
@@ -222,7 +329,7 @@
       <a href="https://github.com/james-stewart-dev" class="btn btn-ghost">View write-ups on GitHub</a>
     </div>
 
-    <div class="diagram-box">
+    <div class="diagram-box" data-reveal="scale">
       <svg viewBox="0 0 700 220" xmlns="http://www.w3.org/2000/svg">
         <rect x="1" y="1" width="698" height="218" fill="none" stroke="#2a3340" stroke-width="1"/>
         <circle cx="150" cy="110" r="46" fill="none" stroke="#5cc8ff" stroke-width="1.5"/>
@@ -242,51 +349,51 @@
   </div>
 </section>
 
-<hr class="divider" />
+<hr class="divider" data-reveal="line" />
 
 <section id="modelling">
   <div class="wrap">
-    <div class="section-head">
+    <div class="section-head" data-reveal>
       <h2>3D Modelling</h2>
       <p>Built and rendered in Blender, developed independently over several years — the same problem-solving instinct applied to actual geometry instead of logic circuits.</p>
     </div>
 
     <div class="gallery">
-      <div class="render-tile">Add render here<br>e.g. Stormworks aircraft build</div>
-      <div class="render-tile">Add render here<br>e.g. wireframe / clay pass</div>
-      <div class="render-tile">Add render here<br>e.g. textured final shot</div>
+      <div class="render-tile" data-reveal="scale">Add render here<br>e.g. Stormworks aircraft build</div>
+      <div class="render-tile" data-reveal="scale">Add render here<br>e.g. wireframe / clay pass</div>
+      <div class="render-tile" data-reveal="scale">Add render here<br>e.g. textured final shot</div>
     </div>
   </div>
 </section>
 
-<hr class="divider" />
+<hr class="divider" data-reveal="line" />
 
 <section id="about">
   <div class="wrap">
-    <div class="section-head">
+    <div class="section-head" data-reveal>
       <h2>Background</h2>
     </div>
-    <p class="about-text">
+    <p class="about-text" data-reveal>
       I spent two years as an electrical and air-conditioning apprentice, which is where I actually learned to fault-find properly — under time pressure, on live systems, with no room to guess. Outside of that, I've spent years teaching myself <strong>3D modelling</strong> and <strong>systems logic</strong>, usually by picking something complicated apart until I understood it, then writing up what I found. I'm looking for a role where that's the actual job, not just what I do after work.
     </p>
 
     <div class="skills-grid">
-      <div class="skill-row"><span>3D Modelling</span><span>Blender</span></div>
-      <div class="skill-row"><span>Systems & Logic Engineering</span><span>Stormworks</span></div>
-      <div class="skill-row"><span>Technical Documentation</span><span>Written write-ups</span></div>
-      <div class="skill-row"><span>Electrical Fault-Finding</span><span>Trade-certified</span></div>
-      <div class="skill-row"><span>AI-Assisted Workflow</span><span>Research & troubleshooting</span></div>
-      <div class="skill-row"><span>General PC Skills</span><span>Build & troubleshoot</span></div>
+      <div class="skill-row" data-reveal><span>3D Modelling</span><span>Blender</span></div>
+      <div class="skill-row" data-reveal><span>Systems & Logic Engineering</span><span>Stormworks</span></div>
+      <div class="skill-row" data-reveal><span>Technical Documentation</span><span>Written write-ups</span></div>
+      <div class="skill-row" data-reveal><span>Electrical Fault-Finding</span><span>Trade-certified</span></div>
+      <div class="skill-row" data-reveal><span>AI-Assisted Workflow</span><span>Research & troubleshooting</span></div>
+      <div class="skill-row" data-reveal><span>General PC Skills</span><span>Build & troubleshoot</span></div>
     </div>
   </div>
 </section>
 
 <footer id="contact">
   <div class="wrap">
-    <div class="section-head">
+    <div class="section-head" data-reveal>
       <h2>Get in touch</h2>
     </div>
-    <div class="footer-row">
+    <div class="footer-row" data-reveal>
       <div class="footer-links">
         <a href="mailto:james2006stewart@gmail.com">james2006stewart@gmail.com</a>
         <a href="https://github.com/james-stewart-dev">GitHub</a>
@@ -302,8 +409,122 @@
   const navLinks = document.getElementById('navLinks');
   navToggle.addEventListener('click', () => navLinks.classList.toggle('open'));
   navLinks.querySelectorAll('a').forEach(a => a.addEventListener('click', () => navLinks.classList.remove('open')));
-</script>
 
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Eased scroll for every in-page link — nav items and CTA buttons alike —
+  // so navigating the page always glides instead of jumping.
+  function easeInOutCubic(t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
+  function smoothScrollTo(targetY, duration) {
+    const startY = window.scrollY;
+    const diff = targetY - startY;
+    if (reducedMotion || Math.abs(diff) < 2) { window.scrollTo(0, targetY); return; }
+    let startTime = null;
+    function step(ts) {
+      if (startTime === null) startTime = ts;
+      const t = Math.min(1, (ts - startTime) / duration);
+      window.scrollTo(0, startY + diff * easeInOutCubic(t));
+      if (t < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+  document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      const id = a.getAttribute('href').slice(1);
+      const target = document.getElementById(id);
+      if (!target) return;
+      e.preventDefault();
+      const navHeight = document.querySelector('.nav')?.offsetHeight || 0;
+      const targetY = target.getBoundingClientRect().top + window.scrollY - navHeight - 12;
+      smoothScrollTo(targetY, 950);
+      history.pushState(null, '', '#' + id);
+    });
+  });
+
+  // Logo easter egg: hover or click slides it open into "James Stewart", auto-closes after a few seconds
+  const logoMark = document.getElementById('logoMark');
+  const markFull = document.getElementById('markFull');
+  const FULL_NAME = 'James Stewart';
+  markFull.innerHTML = FULL_NAME.split('').map((c, i) =>
+    `<span class="ch" style="transition-delay:${340 + i * 22}ms">${c === ' ' ? '&nbsp;' : c}</span>`
+  ).join('');
+  let markCloseTimer = null;
+  function openMark() {
+    clearTimeout(markCloseTimer);
+    if (!logoMark.classList.contains('expanded')) {
+      logoMark.classList.add('expanded');
+      logoMark.setAttribute('aria-expanded', 'true');
+    }
+    logoMark.classList.remove('jump');
+    void logoMark.offsetWidth;
+    logoMark.classList.add('jump');
+    markCloseTimer = setTimeout(closeMark, 2800);
+  }
+  function closeMark() {
+    logoMark.classList.remove('expanded');
+    logoMark.setAttribute('aria-expanded', 'false');
+  }
+  logoMark.addEventListener('mouseenter', openMark);
+  logoMark.addEventListener('click', openMark);
+  logoMark.addEventListener('focus', openMark);
+  logoMark.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openMark(); }
+  });
+
+  // Scroll-reveal: elements fade, rotate and settle into place as they enter view
+  const revealObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('in-view');
+        revealObserver.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.05, rootMargin: '0px 0px -10% 0px' });
+  document.querySelectorAll('[data-reveal]').forEach(el => revealObserver.observe(el));
+
+  // Safety net: on short pages or small preview panes, an element can sit just
+  // past the observer's margin and never trigger — reveal anything already visible.
+  window.addEventListener('load', () => {
+    document.querySelectorAll('[data-reveal]:not(.in-view)').forEach(el => {
+      const r = el.getBoundingClientRect();
+      if (r.top < window.innerHeight && r.bottom > 0) el.classList.add('in-view');
+    });
+  });
+
+  // Hero parallax: content drifts up, rotates and fades as you scroll past it
+  const heroContent = document.querySelector('.hero-content');
+  const heroEl = document.querySelector('.hero');
+  let ticking = false;
+  function updateParallax() {
+    ticking = false;
+    if (!heroContent || !heroEl || reducedMotion) return;
+    const h = heroEl.offsetHeight || 1;
+    const p = Math.min(1, window.scrollY / h);
+    heroContent.style.transform = `translateY(${p * 90}px) rotate(${p * -3}deg)`;
+    heroContent.style.opacity = String(1 - p * 1.15);
+  }
+  window.addEventListener('scroll', () => {
+    if (!ticking) { requestAnimationFrame(updateParallax); ticking = true; }
+  }, { passive: true });
+  updateParallax();
+
+  // Subtle 3D tilt on project cards and render tiles
+  if (!reducedMotion) {
+    document.querySelectorAll('.project-card, .render-tile').forEach(card => {
+      card.addEventListener('mousemove', e => {
+        const r = card.getBoundingClientRect();
+        const x = (e.clientX - r.left) / r.width - 0.5;
+        const y = (e.clientY - r.top) / r.height - 0.5;
+        card.style.transition = 'transform .1s ease';
+        card.style.transform = `perspective(700px) rotateX(${y * -6}deg) rotateY(${x * 6}deg)`;
+      });
+      card.addEventListener('mouseleave', () => {
+        card.style.transition = 'transform .5s cubic-bezier(0.16,1,0.3,1)';
+        card.style.transform = '';
+      });
+    });
+  }
+</script>
 <script>
 /* ==========================================================================
    Black hole hero background — vanilla-JS port of a React/WebGL component.
