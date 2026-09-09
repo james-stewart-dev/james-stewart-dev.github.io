@@ -33,6 +33,7 @@
     font-family:var(--sans);
     line-height:1.6;
     -webkit-font-smoothing:antialiased;
+    overflow-anchor:none;
   }
 
   a{color:inherit;}
@@ -194,6 +195,9 @@
     0%, 100%{ background-position:200% 0; }
     50%{ background-position:0% 0; }
   }
+
+  /* "Get in touch" is always visible and shimmering, not gated behind scroll-reveal */
+  #contactHead{opacity:1 !important; transform:none !important;}
 
   .project-card{
     border:1px solid rgba(255,255,255,0.12); border-radius:10px; padding:28px;
@@ -386,7 +390,7 @@
 
 <footer id="contact">
   <div class="wrap">
-    <div class="section-head" data-reveal>
+    <div class="section-head" data-reveal id="contactHead">
       <h2>Get in touch</h2>
     </div>
     <div class="footer-row" data-reveal>
@@ -400,6 +404,15 @@
 </footer>
 
 <script>
+  // Prevent the browser from restoring a previous scroll position, and clear
+  // any leftover #hash from a prior visit so every fresh load starts at the
+  // very top (hero) instead of wherever the hash points to.
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+  if (window.location.hash) {
+    history.replaceState(null, '', window.location.pathname + window.location.search);
+  }
+  window.scrollTo(0, 0);
+
   // Mobile nav toggle
   const navToggle = document.getElementById('navToggle');
   const navLinks = document.getElementById('navLinks');
