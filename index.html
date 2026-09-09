@@ -491,35 +491,46 @@
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openMark(); }
   });
 
-  // Scroll-reveal: elements fade, rotate and settle into place as they enter view
+  // Scroll-reveal: elements fade/rotate in as they cross into view, and
+  // reverse back out if you scroll away — so the animation replays correctly
+  // in both directions, every time, not just once on the way down.
+  function syncReveal(el) {
+    const r = el.getBoundingClientRect();
+    const margin = window.innerHeight * 0.1;
+    const visible = r.top < window.innerHeight - margin && r.bottom > 0;
+    el.classList.toggle('in-view', visible);
+  }
+  function syncAllReveals() {
+    document.querySelectorAll('[data-reveal]').forEach(syncReveal);
+  }
+
   try {
     const revealObserver = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('in-view');
-          revealObserver.unobserve(entry.target);
-        }
+        entry.target.classList.toggle('in-view', entry.isIntersecting);
       });
     }, { threshold: 0.05, rootMargin: '0px 0px -10% 0px' });
     document.querySelectorAll('[data-reveal]').forEach(el => revealObserver.observe(el));
   } catch (err) {
-    document.querySelectorAll('[data-reveal]').forEach(el => el.classList.add('in-view'));
+    syncAllReveals();
   }
 
-  // Safety net: on short pages or small preview panes, an element can sit just
-  // past the observer's margin and never trigger — reveal anything already visible.
-  window.addEventListener('load', () => {
-    document.querySelectorAll('[data-reveal]:not(.in-view)').forEach(el => {
-      const r = el.getBoundingClientRect();
-      if (r.top < window.innerHeight && r.bottom > 0) el.classList.add('in-view');
-    });
-  });
-
-  // Last-resort fail-safe only — long enough that it never fires during
-  // normal browsing, just guards against a genuinely broken observer.
-  setTimeout(() => {
-    document.querySelectorAll('[data-reveal]:not(.in-view)').forEach(el => el.classList.add('in-view'));
-  }, 30000);
+  // Backup path: IntersectionObserver callbacks can land late or get missed
+  // on a page doing heavy GPU work like this one, which is what left some
+  // elements permanently stuck invisible before. This plain scroll/resize
+  // listener double-checks every element's real position directly, so
+  // nothing can get stranded even if the observer misbehaves.
+  let revealTicking = false;
+  function onRevealScroll() {
+    revealTicking = false;
+    syncAllReveals();
+  }
+  window.addEventListener('scroll', () => {
+    if (!revealTicking) { requestAnimationFrame(onRevealScroll); revealTicking = true; }
+  }, { passive: true });
+  window.addEventListener('resize', syncAllReveals);
+  window.addEventListener('load', syncAllReveals);
+  syncAllReveals();
 
   // Hero parallax: content drifts up, rotates and fades as you scroll past it
   const heroContent = document.querySelector('.hero-content');
