@@ -343,7 +343,7 @@
         <text x="480" y="150" fill="#8a94a0" font-family="IBM Plex Mono, monospace" font-size="10">OUTPUT</text>
       </svg>
       <p style="color:var(--text-dim); font-size:12.5px; font-family:var(--mono); margin-top:12px;">
-        Placeholder schematic — swap for a real screenshot or annotated diagram from one of your builds.
+        Simplified propulsion schematic: engine → gearbox → output.
       </p>
     </div>
   </div>
@@ -359,9 +359,9 @@
     </div>
 
     <div class="gallery">
-      <div class="render-tile" data-reveal="scale">Add render here<br>e.g. Stormworks aircraft build</div>
-      <div class="render-tile" data-reveal="scale">Add render here<br>e.g. wireframe / clay pass</div>
-      <div class="render-tile" data-reveal="scale">Add render here<br>e.g. textured final shot</div>
+      <div class="render-tile" data-reveal="scale">Stormworks aircraft build<br>— render coming soon</div>
+      <div class="render-tile" data-reveal="scale">Wireframe pass<br>— render coming soon</div>
+      <div class="render-tile" data-reveal="scale">Final textured render<br>— coming soon</div>
     </div>
   </div>
 </section>
@@ -993,7 +993,7 @@ void main() {
       bloomB = makeTarget(bw, bh);
     }
 
-    let clock = reduced ? 6 : 0, lastFrame = 0, running = true, visible = true, raf = 0;
+    let clock = reduced ? 6 : 0, lastFrame = 0, running = true, visible = true, raf = 0, frameCount = 0;
 
     function pass(prog, target) {
       gl.useProgram(prog.program);
@@ -1115,12 +1115,32 @@ void main() {
       lastFrame = now;
       if (!current.paused && !reduced) clock += dt;
       render(clock);
+      frameCount++;
     }
 
     if (!build()) { giveUp('build-failed'); return { updateParams(){}, destroy(){} }; }
     resize();
     settle(reduced ? 16 : 1);
     if (!reduced) raf = requestAnimationFrame(tick);
+
+    // Watchdog: some desktop GPU/driver combos choke on this shader's cost at
+    // full resolution and silently stop advancing (the tab stays "alive" but
+    // no new frame ever renders, so it looks frozen). If frames stop landing
+    // for a few seconds while the tab is visible, fall back gracefully
+    // instead of leaving a frozen frame on screen forever.
+    let watchdogLast = frameCount;
+    const watchdog = setInterval(() => {
+      if (!running || reduced) return;
+      if (!visible || document.hidden) { watchdogLast = frameCount; return; }
+      if (frameCount === watchdogLast) {
+        giveUp('stalled');
+        running = false;
+        cancelAnimationFrame(raf);
+        clearInterval(watchdog);
+        return;
+      }
+      watchdogLast = frameCount;
+    }, 3000);
 
     const ro = new ResizeObserver(() => { resize(); if (reduced || current.paused) settle(16); });
     ro.observe(host);
@@ -1146,6 +1166,7 @@ void main() {
       destroy() {
         running = false;
         cancelAnimationFrame(raf);
+        clearInterval(watchdog);
         ro.disconnect(); io.disconnect();
         document.removeEventListener('visibilitychange', onVisibility);
         canvas.removeEventListener('webglcontextlost', onLost);
@@ -1164,14 +1185,14 @@ void main() {
       diskInner: 3, diskOuter: 15, diskThickness: 0.26, diskDensity: 1,
       brightness: 1, spinSpeed: 0.06, grain: 0.48, doppler: 0.35,
       hotColor: '#FFF3DE', midColor: '#FF9838', coolColor: '#8E3A0B',
-      starBrightness: 0, exposure: 0.9, vignette: 0.28, maxDpr: 1.75,
+      starBrightness: 0, exposure: 0.9, vignette: 0.28, maxDpr: 1.4,
       scrimStrength: 0.9, paused: false,
       // These differ by viewport, same as the demo's useNarrow() breakpoint:
       elevation: narrow ? -7 : -5.5,
       fov: narrow ? 58 : 42,
       glow: narrow ? 0.85 : 1,
-      steps: narrow ? 200 : 300,
-      resolution: narrow ? 0.6 : 0.7,
+      steps: narrow ? 200 : 170,
+      resolution: narrow ? 0.6 : 0.5,
       focus: narrow ? [0.5, 0.76] : [0.72, 0.46],
       scrim: narrow ? 'top' : 'left',
     };
