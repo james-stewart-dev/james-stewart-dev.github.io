@@ -6,9 +6,11 @@
 <title>James Stewart — Portfolio</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PHJlY3QgeD0iMyIgeT0iMyIgd2lkdGg9IjU4IiBoZWlnaHQ9IjU4IiByeD0iMTAiIGZpbGw9IiMxMTE1MWIiIHN0cm9rZT0iIzNlN2NiMSIgc3Ryb2tlLXdpZHRoPSIzIi8+PHRleHQgeD0iMzIiIHk9IjQxIiBmb250LWZhbWlseT0iSUJNIFBsZXggTW9ubywgbW9ub3NwYWNlIiBmb250LXNpemU9IjI0IiBmb250LXdlaWdodD0iNjAwIiBmaWxsPSIjNWNjOGZmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5KUzwvdGV4dD48L3N2Zz4=">
 <meta name="description" content="James Stewart — self-taught systems engineering, 3D modelling, and technical documentation.">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'self'; form-action 'none';">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600&family=Inter:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root{
     --graphite:#05070a;
@@ -136,9 +138,8 @@
     padding:13px 26px; border-radius:999px; text-decoration:none;
     border:1px solid rgba(255,255,255,0.16);
     background:rgba(255,255,255,0.05);
-    backdrop-filter:blur(3px);
-    backdrop-filter:blur(3px) url(#btn-glass);
-    -webkit-backdrop-filter:blur(10px);
+    backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
     box-shadow:
       0 2px 6px rgba(0,0,0,0.18),
       0 0 14px rgba(255,255,255,0.06),
@@ -156,6 +157,7 @@
 
   /* SECTIONS */
   section{padding:96px 0;}
+  section, footer{content-visibility:auto; contain-intrinsic-size:0 900px;}
   .section-head{margin-bottom:36px;}
   .section-head h2{font-size:26px; color:var(--text);}
   .divider{height:1px; background:var(--line); border:none; margin:0;}
@@ -165,7 +167,7 @@
   /* SCROLL REVEAL SYSTEM */
   [data-reveal]{
     opacity:0; transform:translateY(46px) rotate(-2.5deg);
-    transition:opacity 1.3s cubic-bezier(0.16,1,0.3,1), transform 1.3s cubic-bezier(0.16,1,0.3,1);
+    transition:opacity 1.7s cubic-bezier(0.16,1,0.3,1), transform 1.7s cubic-bezier(0.16,1,0.3,1);
     will-change:transform, opacity;
   }
   [data-reveal].in-view{ opacity:1; transform:translateY(0) rotate(0deg); }
@@ -198,6 +200,15 @@
 
   /* "Get in touch" is always visible and shimmering, not gated behind scroll-reveal */
   #contactHead{opacity:1 !important; transform:none !important;}
+  #contactHead h2{
+    background-size:220% 100%;
+    animation:contactShine 3s linear infinite;
+    text-shadow:0 0 18px rgba(92,200,255,0.35);
+  }
+  @keyframes contactShine{
+    0%{ background-position:220% 0; }
+    100%{ background-position:-20% 0; }
+  }
 
   .project-card{
     border:1px solid rgba(255,255,255,0.12); border-radius:10px; padding:28px;
@@ -504,11 +515,11 @@
     });
   });
 
-  // Hard fail-safe: whatever the cause — a blocked API, a timing quirk, a
-  // browser hiccup — nothing should stay invisible forever.
+  // Last-resort fail-safe only — long enough that it never fires during
+  // normal browsing, just guards against a genuinely broken observer.
   setTimeout(() => {
     document.querySelectorAll('[data-reveal]:not(.in-view)').forEach(el => el.classList.add('in-view'));
-  }, 4000);
+  }, 30000);
 
   // Hero parallax: content drifts up, rotates and fades as you scroll past it
   const heroContent = document.querySelector('.hero-content');
