@@ -1152,24 +1152,37 @@ void main() {
     // for a few seconds while the tab is visible, fall back gracefully
     // instead of leaving a frozen frame on screen forever.
     let watchdogLast = frameCount;
+    let watchdogStrikes = 0;
     const watchdog = setInterval(() => {
       if (!running || reduced) return;
-      if (!visible || document.hidden) { watchdogLast = frameCount; return; }
+      if (!visible || document.hidden) { watchdogLast = frameCount; watchdogStrikes = 0; return; }
       if (frameCount === watchdogLast) {
+        watchdogStrikes++;
+        if (watchdogStrikes < 3) {
+          cancelAnimationFrame(raf);
+          lastFrame = 0;
+          raf = requestAnimationFrame(tick);
+          return;
+        }
         giveUp('stalled');
         running = false;
         cancelAnimationFrame(raf);
         clearInterval(watchdog);
         return;
       }
+      watchdogStrikes = 0;
       watchdogLast = frameCount;
-    }, 3000);
+    }, 8000);
 
     const ro = new ResizeObserver(() => { resize(); if (reduced || current.paused) settle(16); });
     ro.observe(host);
     const io = new IntersectionObserver((entries) => { visible = entries[0]?.isIntersecting ?? true; }, { threshold: 0 });
     io.observe(host);
-    const onVisibility = () => { visible = !document.hidden; lastFrame = 0; };
+    const onVisibility = () => {
+      visible = !document.hidden;
+      lastFrame = 0;
+      if (visible && gl.isContextLost()) onRestored();
+    };
     const onLost = (e) => { e.preventDefault(); running = false; cancelAnimationFrame(raf); canvas.style.display = 'none'; };
     const onRestored = () => {
       width = height = sceneW = sceneH = 0;
