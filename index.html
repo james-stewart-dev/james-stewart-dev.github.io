@@ -34,9 +34,6 @@
     line-height:1.6;
     -webkit-font-smoothing:antialiased;
   }
-  @media (prefers-reduced-motion: reduce){
-    *{animation-duration:0.01ms !important; animation-iteration-count:1 !important; transition-duration:0.01ms !important;}
-  }
 
   a{color:inherit;}
   h1,h2,h3{font-family:var(--display); font-weight:600; margin:0;}
@@ -58,8 +55,8 @@
     border-radius:4px; flex-shrink:0; overflow:hidden; white-space:nowrap;
     font-family:var(--mono); font-size:13px; color:var(--blueprint); letter-spacing:0.5px;
     cursor:pointer; user-select:none; background:rgba(92,200,255,0.06);
-    transition:width .75s cubic-bezier(0.34,1.56,0.64,1), border-radius .75s cubic-bezier(0.34,1.56,0.64,1),
-      background .5s ease, box-shadow .5s ease;
+    transition:width 1.1s cubic-bezier(0.34,1.56,0.64,1), border-radius 1.1s cubic-bezier(0.34,1.56,0.64,1),
+      background .7s ease, box-shadow .7s ease;
   }
   .mark:hover{ box-shadow:0 0 0 4px rgba(92,200,255,0.10); }
   .mark.expanded{
@@ -67,7 +64,7 @@
     background:rgba(92,200,255,0.14);
     box-shadow:0 0 26px rgba(92,200,255,0.28), inset 0 1px 0 rgba(255,255,255,0.16);
   }
-  .mark.jump{ animation:markJump .55s cubic-bezier(0.34,1.56,0.64,1); }
+  .mark.jump{ animation:markJump .8s cubic-bezier(0.34,1.56,0.64,1); }
   @keyframes markJump{
     0%{ transform:scale(1,1); }
     28%{ transform:scale(0.88,1.16) translateY(-3px); }
@@ -82,7 +79,7 @@
   .mark.expanded .mark-short{ opacity:0; transition:opacity .2s ease; }
   .mark-full{ opacity:0; font-size:13.5px; }
   .mark.expanded .mark-full{ opacity:1; }
-  .mark-full .ch{ display:inline-block; opacity:0; transform:translateY(8px); transition:opacity .4s ease, transform .4s ease; }
+  .mark-full .ch{ display:inline-block; opacity:0; transform:translateY(8px); transition:opacity .6s ease, transform .6s ease; }
   .mark.expanded .mark-full .ch{ opacity:1; transform:translateY(0); }
   .nav-links{display:flex; gap:28px; list-style:none; margin:0; padding:0;}
   .nav-links a{
@@ -97,12 +94,11 @@
     .nav-links{
       position:absolute; top:100%; left:0; right:0;
       flex-direction:column; gap:0;
-      background:rgba(23,29,37,0.72);
+      background:rgba(10,13,18,0.97);
       backdrop-filter:blur(16px);
-      backdrop-filter:blur(12px) url(#glass-distort);
       -webkit-backdrop-filter:blur(16px);
       border-bottom:1px solid rgba(255,255,255,0.12);
-      max-height:0; overflow:hidden; transition:max-height .25s ease;
+      max-height:0; overflow:hidden; transition:max-height .35s ease;
     }
     .nav-links.open{max-height:280px;}
     .nav-links a{display:block; padding:14px 28px; border-bottom:1px solid rgba(255,255,255,0.08);}
@@ -149,7 +145,7 @@
       inset -2px -2px 1px -1px rgba(255,255,255,0.35),
       inset 0 0 8px 6px rgba(255,255,255,0.08);
     color:var(--text);
-    transition:transform .3s cubic-bezier(0.1,0.4,0.2,1), background .2s ease, border-color .2s ease, box-shadow .2s ease;
+    transition:transform .45s cubic-bezier(0.1,0.4,0.2,1), background .2s ease, border-color .2s ease, box-shadow .2s ease;
   }
   .btn:hover{ transform:scale(1.05); }
   .btn-primary{ background:rgba(92,200,255,0.16); border-color:rgba(92,200,255,0.5); color:#eaf8ff; }
@@ -168,7 +164,7 @@
   /* SCROLL REVEAL SYSTEM */
   [data-reveal]{
     opacity:0; transform:translateY(46px) rotate(-2.5deg);
-    transition:opacity .9s cubic-bezier(0.16,1,0.3,1), transform .9s cubic-bezier(0.16,1,0.3,1);
+    transition:opacity 1.3s cubic-bezier(0.16,1,0.3,1), transform 1.3s cubic-bezier(0.16,1,0.3,1);
     will-change:transform, opacity;
   }
   [data-reveal].in-view{ opacity:1; transform:translateY(0) rotate(0deg); }
@@ -246,7 +242,7 @@
   .about-text{max-width:62ch; color:var(--text-dim); font-size:16px;}
   .about-text strong{color:var(--text); font-weight:500;}
 
-  footer{padding:64px 0 48px; border-top:1px solid var(--line);}
+  footer{padding:120px 0 96px; border-top:1px solid var(--line);}
   .footer-row{display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;}
   .footer-links{display:flex; gap:20px;}
   .footer-links a{color:var(--text-dim); text-decoration:none; font-size:14.5px;}
@@ -410,7 +406,7 @@
   navToggle.addEventListener('click', () => navLinks.classList.toggle('open'));
   navLinks.querySelectorAll('a').forEach(a => a.addEventListener('click', () => navLinks.classList.remove('open')));
 
-  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const reducedMotion = false; // force animation on regardless of system preference
 
   // Eased scroll for every in-page link — nav items and CTA buttons alike —
   // so navigating the page always glides instead of jumping.
@@ -436,7 +432,7 @@
       e.preventDefault();
       const navHeight = document.querySelector('.nav')?.offsetHeight || 0;
       const targetY = target.getBoundingClientRect().top + window.scrollY - navHeight - 12;
-      smoothScrollTo(targetY, 950);
+      smoothScrollTo(targetY, 1400);
       history.pushState(null, '', '#' + id);
     });
   });
@@ -472,15 +468,19 @@
   });
 
   // Scroll-reveal: elements fade, rotate and settle into place as they enter view
-  const revealObserver = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add('in-view');
-        revealObserver.unobserve(entry.target);
-      }
-    });
-  }, { threshold: 0.05, rootMargin: '0px 0px -10% 0px' });
-  document.querySelectorAll('[data-reveal]').forEach(el => revealObserver.observe(el));
+  try {
+    const revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('in-view');
+          revealObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.05, rootMargin: '0px 0px -10% 0px' });
+    document.querySelectorAll('[data-reveal]').forEach(el => revealObserver.observe(el));
+  } catch (err) {
+    document.querySelectorAll('[data-reveal]').forEach(el => el.classList.add('in-view'));
+  }
 
   // Safety net: on short pages or small preview panes, an element can sit just
   // past the observer's margin and never trigger — reveal anything already visible.
@@ -490,6 +490,12 @@
       if (r.top < window.innerHeight && r.bottom > 0) el.classList.add('in-view');
     });
   });
+
+  // Hard fail-safe: whatever the cause — a blocked API, a timing quirk, a
+  // browser hiccup — nothing should stay invisible forever.
+  setTimeout(() => {
+    document.querySelectorAll('[data-reveal]:not(.in-view)').forEach(el => el.classList.add('in-view'));
+  }, 4000);
 
   // Hero parallax: content drifts up, rotates and fades as you scroll past it
   const heroContent = document.querySelector('.hero-content');
