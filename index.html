@@ -157,7 +157,6 @@
 
   /* SECTIONS */
   section{padding:96px 0;}
-  section, footer{content-visibility:auto; contain-intrinsic-size:0 900px;}
   .section-head{margin-bottom:36px;}
   .section-head h2{font-size:26px; color:var(--text);}
   .divider{height:1px; background:var(--line); border:none; margin:0;}
@@ -198,8 +197,8 @@
     50%{ background-position:0% 0; }
   }
 
-  /* "Get in touch" is always visible and shimmering, not gated behind scroll-reveal */
-  #contactHead{opacity:1 !important; transform:none !important;}
+  /* "Get in touch" section is always visible and shimmering, not gated behind scroll-reveal */
+  #contact [data-reveal]{opacity:1 !important; transform:none !important;}
   #contactHead h2{
     background-size:220% 100%;
     animation:contactShine 3s linear infinite;
@@ -526,6 +525,9 @@
     syncAllReveals();
   }
   window.addEventListener('scroll', () => {
+    if (!revealTicking) { requestAnimationFrame(onRevealScroll); revealTicking = true; }
+  }, { passive: true });
+  window.addEventListener('touchmove', () => {
     if (!revealTicking) { requestAnimationFrame(onRevealScroll); revealTicking = true; }
   }, { passive: true });
   window.addEventListener('resize', syncAllReveals);
