@@ -6,7 +6,7 @@
 <title>James Stewart — Portfolio</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PHJlY3QgeD0iMyIgeT0iMyIgd2lkdGg9IjU4IiBoZWlnaHQ9IjU4IiByeD0iMTAiIGZpbGw9IiMxMTE1MWIiIHN0cm9rZT0iIzNlN2NiMSIgc3Ryb2tlLXdpZHRoPSIzIi8+PHRleHQgeD0iMzIiIHk9IjQxIiBmb250LWZhbWlseT0iSUJNIFBsZXggTW9ubywgbW9ub3NwYWNlIiBmb250LXNpemU9IjI0IiBmb250LXdlaWdodD0iNjAwIiBmaWxsPSIjNWNjOGZmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5KUzwvdGV4dD48L3N2Zz4=">
 <meta name="description" content="James Stewart — self-taught systems engineering, 3D modelling, and technical documentation.">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'none';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' blob:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'none';">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1326,14 +1326,28 @@ if (viewport && canvas && window.WebGLRenderingContext) {
   // Lighting keyed to the page's own palette (blueprint key light, brass rim),
   // plus a soft hemisphere fill so PBR materials don't go near-black without
   // a full environment map.
-  scene.add(new THREE.HemisphereLight(0x3a5068, 0x0a0d12, 1.6));
-  scene.add(new THREE.AmbientLight(0x2a3340, 1.0));
-  const key = new THREE.DirectionalLight(0x5cc8ff, 3);
+  // Ambient does the heavy lifting here so no face of the model is ever
+  // truly dark — it lights every surface equally regardless of orientation.
+  // Directional lights are kept deliberately weak, just for a hint of
+  // shading/highlight, coming from several angles so nothing casts a hard
+  // dark side.
+  scene.add(new THREE.AmbientLight(0xffffff, 500)); // doesnt even do anything
+  scene.add(new THREE.HemisphereLight(0xffffff, 0xc8ccd2, 500)); // doesent light the missile
+  const key = new THREE.DirectionalLight(0xCCCCCC, 9);
   key.position.set(3, 4, 5);
   scene.add(key);
-  const rim = new THREE.DirectionalLight(0xc9944f, 1.8);
+  const rim = new THREE.DirectionalLight(0xCCCCCC, 5);
   rim.position.set(-4, -2, -3);
   scene.add(rim);
+  const fill = new THREE.DirectionalLight(0xffffff, 1);
+  fill.position.set(-3, 1, 4);
+  scene.add(fill);
+  const back = new THREE.DirectionalLight(0xffffff, 1);
+  back.position.set(0, 2, -5);
+  scene.add(back);
+  const under = new THREE.DirectionalLight(0xffffff, 1);
+  under.position.set(0, -4, 2);
+  scene.add(under);
 
   const rig = new THREE.Group();
   scene.add(rig);
@@ -1382,23 +1396,10 @@ if (viewport && canvas && window.WebGLRenderingContext) {
       const center = box.getCenter(new THREE.Vector3());
       model.position.sub(center); // keep the model at its real, true-to-scale size
 
-      // The export has no real material — just vertex colours — so a bare
-      // glTF primitive falls back to the spec's default material, which is
-      // fully metallic with roughness 1. With no environment map to reflect,
-      // that renders essentially black regardless of lighting. Replace it
-      // with a matte material that actually reads the vertex colours.
-      model.traverse((node) => {
-        if (node.isMesh) {
-          const hasVertexColors = !!node.geometry.attributes.color;
-          node.material = new THREE.MeshStandardMaterial({
-            vertexColors: hasVertexColors,
-            color: hasVertexColors ? 0xffffff : 0x9aa4b0,
-            metalness: 0.1,
-            roughness: 0.55,
-          });
-        }
-      });
-
+      // The GLB ships a real PBR material (base color / normal / roughness
+      // textures baked in Blender) — GLTFLoader builds it automatically now
+      // that the embedded textures can actually load, so there's nothing to
+      // override here anymore.
       rig.add(model);
 
       // Frame it: find the longest axis (the missile's length) and make sure
@@ -1407,7 +1408,7 @@ if (viewport && canvas && window.WebGLRenderingContext) {
       // interactive" usually means (Blender's Y-up export conversion often
       // points a model's length at the camera).
       const maxDim = Math.max(size.x, size.y, size.z) || 1;
-      const fitRadius = (maxDim / 2) * 1.35;
+      const fitRadius = (maxDim / 2) * 0.6;
       const distance = fitRadius / Math.tan((camera.fov * Math.PI / 180) / 2);
       if (size.z >= size.x && size.z >= size.y) {
         camera.position.set(distance, distance * 0.18, 0);
