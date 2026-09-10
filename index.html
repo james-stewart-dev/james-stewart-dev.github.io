@@ -1381,6 +1381,24 @@ if (viewport && canvas && window.WebGLRenderingContext) {
       const size = box.getSize(new THREE.Vector3());
       const center = box.getCenter(new THREE.Vector3());
       model.position.sub(center); // keep the model at its real, true-to-scale size
+
+      // The export has no real material — just vertex colours — so a bare
+      // glTF primitive falls back to the spec's default material, which is
+      // fully metallic with roughness 1. With no environment map to reflect,
+      // that renders essentially black regardless of lighting. Replace it
+      // with a matte material that actually reads the vertex colours.
+      model.traverse((node) => {
+        if (node.isMesh) {
+          const hasVertexColors = !!node.geometry.attributes.color;
+          node.material = new THREE.MeshStandardMaterial({
+            vertexColors: hasVertexColors,
+            color: hasVertexColors ? 0xffffff : 0x9aa4b0,
+            metalness: 0.1,
+            roughness: 0.55,
+          });
+        }
+      });
+
       rig.add(model);
 
       // Frame it: find the longest axis (the missile's length) and make sure
