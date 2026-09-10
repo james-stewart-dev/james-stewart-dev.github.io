@@ -232,10 +232,12 @@
   }
   .diagram-box svg{width:100%; height:auto;}
 
-  .model-tile{ padding:16px; }
+  .missile-feature{ margin-top:40px; }
+  .missile-feature h3{ font-size:19px; margin-bottom:6px; }
+  .missile-feature .role{ font-size:13.5px; font-style:italic; color:var(--text-dim); display:block; margin-bottom:16px; }
   .model-viewport{
-    position:relative; height:440px; border-radius:6px; overflow:hidden;
-    background:var(--graphite-3); cursor:grab; touch-action:none;
+    position:relative; height:460px; overflow:hidden;
+    cursor:grab; touch-action:none;
   }
   .model-viewport:active{ cursor:grabbing; }
   .model-viewport canvas{ display:block; width:100%; height:100%; }
@@ -378,6 +380,16 @@
         Simplified propulsion schematic: engine → gearbox → output.
       </p>
     </div>
+
+    <div class="missile-feature" data-reveal="right">
+      <span class="role">Independent project</span>
+      <h3>Missile Guidance Systems Ported Into A Game World Simulation</h3>
+      <!-- Replace this line with a sentence on the actual guidance/control logic behind the build -->
+      <div class="model-viewport" id="missileViewport">
+        <canvas id="missileCanvas"></canvas>
+        <span class="model-hint">Drag to rotate</span>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -394,14 +406,6 @@
       <div class="render-tile" data-reveal="scale">Stormworks aircraft build<br>— render coming soon</div>
       <div class="render-tile" data-reveal="scale">Wireframe pass<br>— render coming soon</div>
       <div class="render-tile" data-reveal="scale">Final textured render<br>— coming soon</div>
-    </div>
-
-    <div class="diagram-box model-tile" data-reveal="scale">
-      <div class="model-viewport" id="missileViewport">
-        <canvas id="missileCanvas"></canvas>
-        <span class="model-hint">Drag to rotate</span>
-      </div>
-      <p class="model-caption">Missile assembly — interactive GLB render, exported from Blender.</p>
     </div>
   </div>
 </section>
@@ -1319,12 +1323,15 @@ if (viewport && canvas && window.WebGLRenderingContext) {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
 
-  // Lighting keyed to the page's own palette (blueprint key light, brass rim).
-  scene.add(new THREE.AmbientLight(0x2a3340, 1.4));
-  const key = new THREE.DirectionalLight(0x5cc8ff, 2.2);
+  // Lighting keyed to the page's own palette (blueprint key light, brass rim),
+  // plus a soft hemisphere fill so PBR materials don't go near-black without
+  // a full environment map.
+  scene.add(new THREE.HemisphereLight(0x3a5068, 0x0a0d12, 1.6));
+  scene.add(new THREE.AmbientLight(0x2a3340, 1.0));
+  const key = new THREE.DirectionalLight(0x5cc8ff, 3);
   key.position.set(3, 4, 5);
   scene.add(key);
-  const rim = new THREE.DirectionalLight(0xc9944f, 1.4);
+  const rim = new THREE.DirectionalLight(0xc9944f, 1.8);
   rim.position.set(-4, -2, -3);
   scene.add(rim);
 
@@ -1373,10 +1380,28 @@ if (viewport && canvas && window.WebGLRenderingContext) {
       const box = new THREE.Box3().setFromObject(model);
       const size = box.getSize(new THREE.Vector3());
       const center = box.getCenter(new THREE.Vector3());
-      const radius = Math.max(size.x, size.y, size.z) || 1;
-      model.position.sub(center);
-      model.scale.setScalar(1.4 / radius);
+      model.position.sub(center); // keep the model at its real, true-to-scale size
       rig.add(model);
+
+      // Frame it: find the longest axis (the missile's length) and make sure
+      // the camera sits on a *different* axis, so we see it side-on rather
+      // than staring straight down the barrel — which is what "blank but
+      // interactive" usually means (Blender's Y-up export conversion often
+      // points a model's length at the camera).
+      const maxDim = Math.max(size.x, size.y, size.z) || 1;
+      const fitRadius = (maxDim / 2) * 1.35;
+      const distance = fitRadius / Math.tan((camera.fov * Math.PI / 180) / 2);
+      if (size.z >= size.x && size.z >= size.y) {
+        camera.position.set(distance, distance * 0.18, 0);
+      } else {
+        camera.position.set(0, distance * 0.18, distance);
+      }
+      camera.near = Math.max(0.01, distance / 100);
+      camera.far = distance * 20;
+      camera.updateProjectionMatrix();
+      controls.minDistance = distance * 0.25;
+      controls.maxDistance = distance * 3;
+
       ready = true;
       viewport.classList.add('is-ready');
     },
