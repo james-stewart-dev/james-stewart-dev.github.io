@@ -6,7 +6,7 @@
 <title>James Stewart — Portfolio</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PHJlY3QgeD0iMyIgeT0iMyIgd2lkdGg9IjU4IiBoZWlnaHQ9IjU4IiByeD0iMTAiIGZpbGw9IiMxMTE1MWIiIHN0cm9rZT0iIzNlN2NiMSIgc3Ryb2tlLXdpZHRoPSIzIi8+PHRleHQgeD0iMzIiIHk9IjQxIiBmb250LWZhbWlseT0iSUJNIFBsZXggTW9ubywgbW9ub3NwYWNlIiBmb250LXNpemU9IjI0IiBmb250LXdlaWdodD0iNjAwIiBmaWxsPSIjNWNjOGZmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5KUzwvdGV4dD48L3N2Zz4=">
 <meta name="description" content="James Stewart — self-taught systems engineering, 3D modelling, and technical documentation.">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'self'; form-action 'none';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'none';">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -232,6 +232,28 @@
   }
   .diagram-box svg{width:100%; height:auto;}
 
+  .model-tile{ padding:16px; }
+  .model-viewport{
+    position:relative; height:440px; border-radius:6px; overflow:hidden;
+    background:var(--graphite-3); cursor:grab; touch-action:none;
+  }
+  .model-viewport:active{ cursor:grabbing; }
+  .model-viewport canvas{ display:block; width:100%; height:100%; }
+  .model-hint{
+    position:absolute; bottom:12px; right:14px; pointer-events:none;
+    font-family:var(--mono); font-size:11px; color:var(--text-dim);
+    background:rgba(5,7,10,0.6); border:1px solid rgba(255,255,255,0.08);
+    padding:4px 10px; border-radius:999px;
+    opacity:0; transition:opacity .5s ease;
+  }
+  .model-viewport.is-ready .model-hint{ opacity:1; }
+  .model-fallback{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    text-align:center; padding:24px; color:var(--text-dim); font-size:13px; font-family:var(--mono);
+  }
+  .model-caption{ color:var(--text-dim); font-size:12.5px; font-family:var(--mono); margin:14px 2px 2px; }
+  @media (max-width:640px){ .model-viewport{ height:300px; } }
+
   .gallery{display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:24px;}
   @media (max-width:640px){ .gallery{grid-template-columns:1fr;} }
   .render-tile{
@@ -372,6 +394,14 @@
       <div class="render-tile" data-reveal="scale">Stormworks aircraft build<br>— render coming soon</div>
       <div class="render-tile" data-reveal="scale">Wireframe pass<br>— render coming soon</div>
       <div class="render-tile" data-reveal="scale">Final textured render<br>— coming soon</div>
+    </div>
+
+    <div class="diagram-box model-tile" data-reveal="scale">
+      <div class="model-viewport" id="missileViewport">
+        <canvas id="missileCanvas"></canvas>
+        <span class="model-hint">Drag to rotate</span>
+      </div>
+      <p class="model-caption">Missile assembly — interactive GLB render, exported from Blender.</p>
     </div>
   </div>
 </section>
@@ -1245,6 +1275,140 @@ void main() {
     mq.addEventListener('change', (e) => engine.updateParams(paramsFor(e.matches)));
   });
 })();
+</script>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "./vendor/three/build/three.module.js",
+    "three/addons/": "./vendor/three/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+/* ==========================================================================
+   Interactive missile viewer — Three.js scene loading the Blender GLB export.
+   Idle-spins via OrbitControls' autoRotate, gets a quick spin-up flourish
+   each time it scrolls into view, and hands full drag-to-rotate control to
+   the user the moment they touch it. Rendering pauses off-screen/hidden.
+   ========================================================================== */
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const MODEL_URL = './assets/missile.glb';
+const DRACO_DECODER_PATH = './vendor/three/examples/jsm/libs/draco/gltf/';
+
+const viewport = document.getElementById('missileViewport');
+const canvas = document.getElementById('missileCanvas');
+
+function showFallback(msg) {
+  const el = document.createElement('div');
+  el.className = 'model-fallback';
+  el.textContent = msg;
+  viewport.appendChild(el);
+}
+
+if (viewport && canvas && window.WebGLRenderingContext) {
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 100);
+  camera.position.set(0, 0.6, 4.2);
+
+  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+  // Lighting keyed to the page's own palette (blueprint key light, brass rim).
+  scene.add(new THREE.AmbientLight(0x2a3340, 1.4));
+  const key = new THREE.DirectionalLight(0x5cc8ff, 2.2);
+  key.position.set(3, 4, 5);
+  scene.add(key);
+  const rim = new THREE.DirectionalLight(0xc9944f, 1.4);
+  rim.position.set(-4, -2, -3);
+  scene.add(rim);
+
+  const rig = new THREE.Group();
+  scene.add(rig);
+
+  const controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.08;
+  controls.enablePan = false;
+  controls.minDistance = 1.6;
+  controls.maxDistance = 8;
+  controls.autoRotate = true;
+  controls.autoRotateSpeed = 1.1;
+
+  const IDLE_SPEED = 1.1;
+  let idleTimer = null;
+  controls.addEventListener('start', () => {
+    controls.autoRotate = false;
+    clearTimeout(idleTimer);
+  });
+  controls.addEventListener('end', () => {
+    idleTimer = setTimeout(() => { controls.autoRotateSpeed = IDLE_SPEED; controls.autoRotate = true; }, 3000);
+  });
+
+  function resize() {
+    const w = viewport.clientWidth || 1;
+    const h = viewport.clientHeight || 1;
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+    renderer.setSize(w, h, false);
+  }
+  new ResizeObserver(resize).observe(viewport);
+  resize();
+
+  const dracoLoader = new DRACOLoader();
+  dracoLoader.setDecoderPath(DRACO_DECODER_PATH);
+  const gltfLoader = new GLTFLoader();
+  gltfLoader.setDRACOLoader(dracoLoader);
+
+  let ready = false;
+  gltfLoader.load(
+    MODEL_URL,
+    (gltf) => {
+      const model = gltf.scene;
+      const box = new THREE.Box3().setFromObject(model);
+      const size = box.getSize(new THREE.Vector3());
+      const center = box.getCenter(new THREE.Vector3());
+      const radius = Math.max(size.x, size.y, size.z) || 1;
+      model.position.sub(center);
+      model.scale.setScalar(1.4 / radius);
+      rig.add(model);
+      ready = true;
+      viewport.classList.add('is-ready');
+    },
+    undefined,
+    (err) => {
+      console.error('missile GLB failed to load:', err);
+      showFallback("Couldn't load the 3D preview — check assets/missile.glb is in place.");
+    }
+  );
+
+  // Scroll-triggered flourish: a fast spin that eases back to the idle rate
+  // each time the tile re-enters view. Rendering itself pauses off-screen.
+  let visible = true;
+  new IntersectionObserver((entries) => {
+    const wasVisible = visible;
+    visible = entries[0]?.isIntersecting ?? true;
+    if (visible && !wasVisible && ready) {
+      clearTimeout(idleTimer);
+      controls.autoRotate = true;
+      controls.autoRotateSpeed = 6;
+      idleTimer = setTimeout(() => { controls.autoRotateSpeed = IDLE_SPEED; }, 1400);
+    }
+  }, { threshold: 0.15 }).observe(viewport);
+
+  renderer.setAnimationLoop(() => {
+    if (!visible || document.hidden) return;
+    controls.update();
+    renderer.render(scene, camera);
+  });
+} else if (viewport) {
+  showFallback('3D preview needs a browser with WebGL.');
+}
 </script>
 
 </body>
